@@ -3,6 +3,7 @@ use std::io;
 use std::io::BufReader;
 use std::io::Read;
 use std::process;
+use clap::Parser;
 
 use buffer::Buffer;
 use error::DecodeError;
@@ -19,16 +20,25 @@ mod color_type;
 mod error;
 mod interlace_method;
 
-const CAT_IMG_PATH: &str = "/Users/rmcf/Code/libpng/images/cat.png";
-//const INVALID_IMG_PATH: &str = "/Users/rmcf/Code/libpng/images/invalid.png";
+
+#[derive(Parser, Debug)]
+#[command(about)]
+struct Args {
+    file: String,
+
+    #[arg(short='V', long)]
+    verbose: bool
+}
+    
 
 fn main() -> io::Result<()> {
-    let f = File::open(CAT_IMG_PATH)?;
-    let mut reader = BufReader::new(f);
+    let args = Args::parse();
+    
+    let mut reader = BufReader::new(File::open(args.file)?);
     let mut buffer = Vec::new();
 
     reader.read_to_end(&mut buffer)?;
-
+    
     if let Err(err) = decode(buffer) {
         eprintln!("Failed to decode PNG image. Reason: {:?}", err);
         process::exit(1);
