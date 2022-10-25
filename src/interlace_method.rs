@@ -1,6 +1,6 @@
 use crate::error::DecodeError;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum InterlaceMethod {
     None,
     Adam7,

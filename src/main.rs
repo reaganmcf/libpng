@@ -7,9 +7,12 @@ use std::process;
 use buffer::Buffer;
 use error::DecodeError;
 
-use crate::chunk::ChunkType;
+use crate::bit_depth::BitDepth;
+use crate::chunk::{Chunk, ChunkData, ChunkType};
+use crate::color_type::ColorType;
+use crate::interlace_method::InterlaceMethod;
 
-mod bitdepth;
+mod bit_depth;
 mod buffer;
 mod chunk;
 mod color_type;
@@ -37,7 +40,14 @@ fn main() -> io::Result<()> {
 fn decode(buf: Vec<u8>) -> Result<(), DecodeError> {
     let mut buffer = Buffer::new(buf);
     read_signature(&mut buffer)?;
-    read_chunk(&mut buffer);
+    let ihdr = read_chunk(&mut buffer)?;
+    println!("{:#?}", ihdr);
+    
+    let mut curr_chunk = ihdr;
+    while curr_chunk.ty != ChunkType::IEND {
+        curr_chunk = read_chunk(&mut buffer)?;
+        println!("{:#?}", curr_chunk);
+    }
 
     Ok(())
 }
@@ -53,27 +63,60 @@ fn read_signature(buffer: &mut Buffer) -> Result<(), DecodeError> {
     Err(DecodeError::MissingSignature)
 }
 
-fn read_chunk(buffer: &mut Buffer) -> Result<(), DecodeError> {
-    let chunk_length = buffer.read_u32()?;
-    println!("chunk length: {}", chunk_length);
-    let chunk_type: ChunkType = buffer.read_n(4)?.try_into()?;
-    println!("\t-type: {:?}", chunk_type);
+//https://www.w3.org/TR/2003/REC-PNG-20031110/#table51
+fn read_chunk(buffer: &mut Buffer) -> Result<Chunk, DecodeError> {
+    let length = buffer.read_u32()?;
+    let ty: ChunkType = buffer.read_n(4)?.try_into()?;
 
-    Ok(())
+    let data = match ty {
+        ChunkType::IHDR => read_ihdr_chunk_data(buffer, length)?,
+        ChunkType::IDAT => read_idat_chunk_data(buffer, length)?,
+        ChunkType::IEND => ChunkData::IEND,
+        _ => todo!("other chunk types"),
+    };
+
+    let crc = buffer.read_u32()?;
+
+    Ok(Chunk {
+        length,
+        ty,
+        data,
+        crc,
+    })
 }
 
-fn read_chunk_type(buffer: &mut Buffer) -> Result<(), DecodeError> {
-    let chunk_type = buffer.read_n(4);
-
-    Ok(())
-}
-
-fn read_ihdr(buffer: &mut Buffer) -> Result<(), DecodeError> {
-    let ihdr_hdr = buffer.read_n(4)?;
+// https://www.w3.org/TR/2003/REC-PNG-20031110/#11IHDR
+fn read_ihdr_chunk_data(buffer: &mut Buffer, length: u32) -> Result<ChunkData, DecodeError> {
     let width = buffer.read_u32()?;
     let height = buffer.read_u32()?;
+    let bit_depth: BitDepth = buffer.read_u8()?.try_into()?;
+    let color_type: ColorType = buffer.read_u8()?.try_into()?;
 
-    println!("width: {}, height: {}", width, height);
+    // TODO: Add proper support for compression_method field
+    buffer.read_u8()?;
 
-    Ok(())
+    // TODO: Add proper support for filter_method field
+    buffer.read_u8()?;
+
+    let interlace_method: InterlaceMethod = buffer.read_u8()?.try_into()?;
+
+    // TODO - length check
+
+    println!("- read ihdr chunk data");
+    Ok(ChunkData::IHDR {
+        width,
+        height,
+        bit_depth,
+        color_type,
+        compression_method: 0,
+        filter_method: 0,
+        interlace_method,
+    })
+}
+
+fn read_idat_chunk_data(buffer: &mut Buffer, length: u32) -> Result<ChunkData, DecodeError> {
+    let length: usize = length.try_into().unwrap(); 
+    let bytes = Vec::from(buffer.read_n(length)?);
+
+    Ok(ChunkData::IDAT(bytes))
 }

@@ -1,8 +1,15 @@
-use crate::{bitdepth::BitDepth, color_type::ColorType, error::DecodeError, interlace_method::InterlaceMethod};
+use std::fmt::Debug;
 
-#[derive(Debug)]
+use crate::{
+    bit_depth::BitDepth, color_type::ColorType, error::DecodeError,
+    interlace_method::InterlaceMethod,
+};
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum ChunkType {
     IHDR,
+    IDAT,
+    IEND,
 }
 
 impl TryInto<ChunkType> for &[u8] {
@@ -10,12 +17,17 @@ impl TryInto<ChunkType> for &[u8] {
     fn try_into(self: Self) -> Result<ChunkType, Self::Error> {
         match self {
             &[73, 72, 68, 82] => Ok(ChunkType::IHDR),
-            _ => Err(DecodeError::UnknownHeaderType),
+            &[73, 68, 65, 84] => Ok(ChunkType::IDAT),
+            &[73, 69, 78, 68] => Ok(ChunkType::IEND),
+            _ => {
+                println!("Unknown chunk type: {:?}", self);
+                Err(DecodeError::UnknownChunkType)
+            }
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ChunkData {
     IHDR {
         width: u32,
@@ -26,12 +38,15 @@ pub enum ChunkData {
         filter_method: u8,      // ignored for now
         interlace_method: InterlaceMethod,
     },
+    IDAT(Vec<u8>),
+    IEND,
 }
 
 #[derive(Debug)]
 pub struct Chunk {
-    length: u32,
-    ty: ChunkType,
-    data: Option<ChunkData>,
-    crc: u32,
+    pub length: u32,
+    pub ty: ChunkType,
+    pub data: ChunkData,
+    pub crc: u32,
 }
+

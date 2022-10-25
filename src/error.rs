@@ -2,7 +2,7 @@
 pub enum DecodeError {
     MissingSignature,
     UnexpectedEndOfFile,
-    UnknownHeaderType,
+    UnknownChunkType,
     InvalidBitDepth,
     InvalidColorType,
     InvalidInterlaceMethod,

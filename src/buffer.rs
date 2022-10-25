@@ -15,7 +15,7 @@ impl<'a> Buffer<'_> {
     }
 
     pub fn read_n(&mut self, count: usize) -> Result<&[u8], DecodeError> {
-        if self.inner.len() <= self.cursor + count {
+        if self.inner.len() < self.cursor + count {
             println!("Will not be able to read {} bytes - throwing an error", count);
             return Err(DecodeError::UnexpectedEndOfFile);
         }
@@ -28,12 +28,16 @@ impl<'a> Buffer<'_> {
     }
 
     pub fn read_u32(&mut self) -> Result<u32, DecodeError> {
-        let mut res: [u8; 4] = [0,0,0,0];
+        let mut res: [u8; 4] = Default::default();
         let bytes = self.read_n(4)?;
 
-        println!("{:?}", bytes);
         res.copy_from_slice(&bytes[0..4]);
 
         Ok(u32::from_be_bytes(res))
+    }
+
+    pub fn read_u8(&mut self) -> Result<u8, DecodeError> {
+        let byte = self.read_n(1)?[0];
+        Ok(u8::from(byte))
     }
 }
