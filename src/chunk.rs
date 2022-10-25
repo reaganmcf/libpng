@@ -1,3 +1,4 @@
+#![allow(clippy::upper_case_acronyms)]
 use std::fmt::Debug;
 
 use crate::{
@@ -14,11 +15,11 @@ pub enum ChunkType {
 
 impl TryInto<ChunkType> for &[u8] {
     type Error = DecodeError;
-    fn try_into(self: Self) -> Result<ChunkType, Self::Error> {
-        match self {
-            &[73, 72, 68, 82] => Ok(ChunkType::IHDR),
-            &[73, 68, 65, 84] => Ok(ChunkType::IDAT),
-            &[73, 69, 78, 68] => Ok(ChunkType::IEND),
+    fn try_into(self) -> Result<ChunkType, Self::Error> {
+        match *self {
+            [73, 72, 68, 82] => Ok(ChunkType::IHDR),
+            [73, 68, 65, 84] => Ok(ChunkType::IDAT),
+            [73, 69, 78, 68] => Ok(ChunkType::IEND),
             _ => {
                 println!("Unknown chunk type: {:?}", self);
                 Err(DecodeError::UnknownChunkType)

@@ -41,6 +41,6 @@ impl<'a> Buffer<'_> {
 
     pub fn read_u8(&mut self) -> Result<u8, DecodeError> {
         let byte = self.read_n(1)?[0];
-        Ok(u8::from(byte))
+        Ok(byte)
     }
 }

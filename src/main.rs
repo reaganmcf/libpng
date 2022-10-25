@@ -87,6 +87,10 @@ fn read_chunk(buffer: &mut Buffer) -> Result<Chunk, DecodeError> {
 
 // https://www.w3.org/TR/2003/REC-PNG-20031110/#11IHDR
 fn read_ihdr_chunk_data(buffer: &mut Buffer, length: u32) -> Result<ChunkData, DecodeError> {
+    if length != 13 {
+        return Err(DecodeError::InvalidIHDRLength);
+    }
+
     let width = buffer.read_u32()?;
     let height = buffer.read_u32()?;
     let bit_depth: BitDepth = buffer.read_u8()?.try_into()?;
@@ -99,8 +103,6 @@ fn read_ihdr_chunk_data(buffer: &mut Buffer, length: u32) -> Result<ChunkData, D
     buffer.read_u8()?;
 
     let interlace_method: InterlaceMethod = buffer.read_u8()?.try_into()?;
-
-    // TODO - length check
 
     println!("- read ihdr chunk data");
     Ok(ChunkData::IHDR {
