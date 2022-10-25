@@ -1,3 +1,3 @@
-# libpng
+# pngcheck
 
-A Rust implementation of the [PNG specification](https://www.w3.org/TR/2003/REC-PNG-20031110/)
+[pngcheck](http://www.libpng.org/pub/png/apps/pngcheck.html), but in Rust!
