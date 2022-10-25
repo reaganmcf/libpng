@@ -72,6 +72,7 @@ fn read_chunk(buffer: &mut Buffer) -> Result<Chunk, DecodeError> {
         ChunkType::IHDR => read_ihdr_chunk_data(buffer, length)?,
         ChunkType::IDAT => read_idat_chunk_data(buffer, length)?,
         ChunkType::IEND => ChunkData::IEND,
+        #[allow(unreachable_patterns)]
         _ => todo!("other chunk types"),
     };
 
