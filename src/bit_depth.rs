@@ -6,7 +6,7 @@ pub enum BitDepth {
     _2,
     _4,
     _8,
-    _16
+    _16,
 }
 
 impl TryInto<BitDepth> for u8 {
@@ -18,7 +18,7 @@ impl TryInto<BitDepth> for u8 {
             4 => Ok(BitDepth::_4),
             8 => Ok(BitDepth::_8),
             16 => Ok(BitDepth::_16),
-            _ => Err(DecodeError::InvalidBitDepth)
+            _ => Err(DecodeError::InvalidBitDepth),
         }
     }
 }

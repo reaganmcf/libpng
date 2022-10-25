@@ -42,7 +42,7 @@ fn decode(buf: Vec<u8>) -> Result<(), DecodeError> {
     read_signature(&mut buffer)?;
     let ihdr = read_chunk(&mut buffer)?;
     println!("{:#?}", ihdr);
-    
+
     let mut curr_chunk = ihdr;
     while curr_chunk.ty != ChunkType::IEND {
         curr_chunk = read_chunk(&mut buffer)?;
@@ -115,7 +115,7 @@ fn read_ihdr_chunk_data(buffer: &mut Buffer, length: u32) -> Result<ChunkData, D
 }
 
 fn read_idat_chunk_data(buffer: &mut Buffer, length: u32) -> Result<ChunkData, DecodeError> {
-    let length: usize = length.try_into().unwrap(); 
+    let length: usize = length.try_into().unwrap();
     let bytes = Vec::from(buffer.read_n(length)?);
 
     Ok(ChunkData::IDAT(bytes))

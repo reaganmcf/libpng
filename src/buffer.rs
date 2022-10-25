@@ -1,8 +1,8 @@
 use crate::error::DecodeError;
 
 pub struct Buffer<'a> {
-    inner: &'a[u8],
-    cursor: usize
+    inner: &'a [u8],
+    cursor: usize,
 }
 
 impl<'a> Buffer<'_> {
@@ -10,16 +10,19 @@ impl<'a> Buffer<'_> {
         let c: &[u8] = buf.leak();
         Self {
             inner: c,
-            cursor: 0
+            cursor: 0,
         }
     }
 
     pub fn read_n(&mut self, count: usize) -> Result<&[u8], DecodeError> {
         if self.inner.len() < self.cursor + count {
-            println!("Will not be able to read {} bytes - throwing an error", count);
+            println!(
+                "Will not be able to read {} bytes - throwing an error",
+                count
+            );
             return Err(DecodeError::UnexpectedEndOfFile);
         }
-        
+
         let end = self.cursor + count;
         let c = &self.inner[self.cursor..end];
         self.cursor = end;

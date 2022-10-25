@@ -49,4 +49,3 @@ pub struct Chunk {
     pub data: ChunkData,
     pub crc: u32,
 }
-
