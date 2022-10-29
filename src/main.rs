@@ -80,9 +80,8 @@ fn read_chunk(buffer: &mut Buffer) -> Result<Chunk, DecodeError> {
         ChunkType::IHDR => read_ihdr_chunk_data(buffer, length)?,
         ChunkType::IDAT => read_idat_chunk_data(buffer, length)?,
         ChunkType::IEND => ChunkData::IEND,
-        ChunkType::gAMA => read_gama_chunk_data(buffer)?,
-        #[allow(unreachable_patterns)]
-        _ => todo!("{:?}", ty),
+        ChunkType::gAMA => read_gama_chunk_data(buffer, length)?,
+        ChunkType::PLTE => read_plte_chunk_data(buffer, length)?
     };
 
     let crc = buffer.read_u32()?;
@@ -133,10 +132,27 @@ fn read_idat_chunk_data(buffer: &mut Buffer, length: u32) -> Result<ChunkData, D
     Ok(ChunkData::IDAT(bytes))
 }
 
-fn read_gama_chunk_data(buffer: &mut Buffer) -> Result<ChunkData, DecodeError> {
+fn read_gama_chunk_data(buffer: &mut Buffer, _length: u32) -> Result<ChunkData, DecodeError> {
+    // TODO: check length is 4
+
     // 11.3.3.2:
     //  The value is encoded as a four-byte PNG unsigned integer, representing gamma times 100000
     let image_gamma: f64 = f64::from(buffer.read_u32()?) / f64::from(100000);
 
     Ok(ChunkData::gAMA { image_gamma })
+}
+
+fn read_plte_chunk_data(buffer: &mut Buffer, length: u32) -> Result<ChunkData, DecodeError> {
+    let length: usize = length.try_into().unwrap();
+    let mut entries = Vec::with_capacity(length / 3);
+
+    for _ in 0..(length / 3) {
+        let r = buffer.read_u8()?;
+        let g = buffer.read_u8()?;
+        let b = buffer.read_u8()?;
+        
+        entries.push((r, g, b));
+    }
+
+    Ok(ChunkData::PLTE(entries))
 }

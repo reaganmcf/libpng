@@ -13,6 +13,7 @@ pub enum ChunkType {
     IDAT,
     IEND,
     gAMA,
+    PLTE,
 }
 
 impl TryInto<ChunkType> for &[u8] {
@@ -23,6 +24,7 @@ impl TryInto<ChunkType> for &[u8] {
             [73, 68, 65, 84] => Ok(ChunkType::IDAT),
             [73, 69, 78, 68] => Ok(ChunkType::IEND),
             [103, 65, 77, 65] => Ok(ChunkType::gAMA),
+            [80, 76, 84, 69] => Ok(ChunkType::PLTE),
             _ => {
                 println!("Unknown chunk type: {:?}", self);
                 Err(DecodeError::UnknownChunkType)
@@ -46,8 +48,9 @@ pub enum ChunkData {
     IDAT(Vec<u8>),
     IEND,
     gAMA {
-        image_gamma: f64
+        image_gamma: f64,
     },
+    PLTE(Vec<(u8, u8, u8)>)
 }
 
 impl std::fmt::Debug for ChunkData {
@@ -77,6 +80,7 @@ impl std::fmt::Debug for ChunkData {
                 .debug_struct("gAMA")
                 .field("image_gamma", image_gamma)
                 .finish(),
+            Self::PLTE(entries) => f.debug_tuple("PLTE").field(entries).finish()
         }
     }
 }
