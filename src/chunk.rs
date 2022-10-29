@@ -28,7 +28,7 @@ impl TryInto<ChunkType> for &[u8] {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub enum ChunkData {
     IHDR {
         width: u32,
@@ -41,6 +41,33 @@ pub enum ChunkData {
     },
     IDAT(Vec<u8>),
     IEND,
+}
+
+impl std::fmt::Debug for ChunkData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::IHDR {
+                width,
+                height,
+                bit_depth,
+                color_type,
+                compression_method,
+                filter_method,
+                interlace_method,
+            } => f
+                .debug_struct("IHDR")
+                .field("width", width)
+                .field("height", height)
+                .field("bit_depth", bit_depth)
+                .field("color_type", color_type)
+                .field("compression_method", compression_method)
+                .field("fitler_method", filter_method)
+                .field("interlace_method", interlace_method)
+                .finish(),
+            Self::IDAT(data) => f.write_fmt(format_args!("IDAT ({} bytes)", data.len())),
+            Self::IEND => f.write_str("No data"),
+        }
+    }
 }
 
 #[derive(Debug)]
