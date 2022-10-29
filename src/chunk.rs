@@ -7,10 +7,12 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
 pub enum ChunkType {
     IHDR,
     IDAT,
     IEND,
+    gAMA,
 }
 
 impl TryInto<ChunkType> for &[u8] {
@@ -20,6 +22,7 @@ impl TryInto<ChunkType> for &[u8] {
             [73, 72, 68, 82] => Ok(ChunkType::IHDR),
             [73, 68, 65, 84] => Ok(ChunkType::IDAT),
             [73, 69, 78, 68] => Ok(ChunkType::IEND),
+            [103, 65, 77, 65] => Ok(ChunkType::gAMA),
             _ => {
                 println!("Unknown chunk type: {:?}", self);
                 Err(DecodeError::UnknownChunkType)
@@ -28,7 +31,8 @@ impl TryInto<ChunkType> for &[u8] {
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum ChunkData {
     IHDR {
         width: u32,
@@ -41,6 +45,9 @@ pub enum ChunkData {
     },
     IDAT(Vec<u8>),
     IEND,
+    gAMA {
+        image_gamma: f64
+    },
 }
 
 impl std::fmt::Debug for ChunkData {
@@ -66,6 +73,10 @@ impl std::fmt::Debug for ChunkData {
                 .finish(),
             Self::IDAT(data) => f.write_fmt(format_args!("IDAT ({} bytes)", data.len())),
             Self::IEND => f.write_str("No data"),
+            Self::gAMA { image_gamma } => f
+                .debug_struct("gAMA")
+                .field("image_gamma", image_gamma)
+                .finish(),
         }
     }
 }

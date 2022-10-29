@@ -1,9 +1,9 @@
+use clap::Parser;
 use std::fs::File;
 use std::io;
 use std::io::BufReader;
 use std::io::Read;
 use std::process;
-use clap::Parser;
 
 use buffer::Buffer;
 use error::DecodeError;
@@ -20,25 +20,23 @@ mod color_type;
 mod error;
 mod interlace_method;
 
-
 #[derive(Parser, Debug)]
 #[command(about)]
 struct Args {
     file: String,
 
-    #[arg(short='V', long)]
-    verbose: bool
+    #[arg(short = 'V', long)]
+    verbose: bool,
 }
-    
 
 fn main() -> io::Result<()> {
     let args = Args::parse();
-    
+
     let mut reader = BufReader::new(File::open(args.file)?);
     let mut buffer = Vec::new();
 
     reader.read_to_end(&mut buffer)?;
-    
+
     if let Err(err) = decode(buffer) {
         eprintln!("Failed to decode PNG image. Reason: {:?}", err);
         process::exit(1);
@@ -82,8 +80,9 @@ fn read_chunk(buffer: &mut Buffer) -> Result<Chunk, DecodeError> {
         ChunkType::IHDR => read_ihdr_chunk_data(buffer, length)?,
         ChunkType::IDAT => read_idat_chunk_data(buffer, length)?,
         ChunkType::IEND => ChunkData::IEND,
+        ChunkType::gAMA => read_gama_chunk_data(buffer)?,
         #[allow(unreachable_patterns)]
-        _ => todo!("other chunk types"),
+        _ => todo!("{:?}", ty),
     };
 
     let crc = buffer.read_u32()?;
@@ -132,4 +131,12 @@ fn read_idat_chunk_data(buffer: &mut Buffer, length: u32) -> Result<ChunkData, D
     let bytes = Vec::from(buffer.read_n(length)?);
 
     Ok(ChunkData::IDAT(bytes))
+}
+
+fn read_gama_chunk_data(buffer: &mut Buffer) -> Result<ChunkData, DecodeError> {
+    // 11.3.3.2:
+    //  The value is encoded as a four-byte PNG unsigned integer, representing gamma times 100000
+    let image_gamma: f64 = f64::from(buffer.read_u32()?) / f64::from(100000);
+
+    Ok(ChunkData::gAMA { image_gamma })
 }
