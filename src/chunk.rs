@@ -15,6 +15,7 @@ pub enum ChunkType {
     gAMA,
     PLTE,
     bKGD,
+    tRNS
 }
 
 impl TryInto<ChunkType> for &[u8] {
@@ -27,6 +28,7 @@ impl TryInto<ChunkType> for &[u8] {
             [103, 65, 77, 65] => Ok(ChunkType::gAMA),
             [80, 76, 84, 69] => Ok(ChunkType::PLTE),
             [98, 75, 71, 68] => Ok(ChunkType::bKGD),
+            [116, 82, 78, 83] => Ok(ChunkType::tRNS),
             _ => {
                 println!("Unknown chunk type: {:?}", self);
                 Err(DecodeError::UnknownChunkType)
@@ -40,6 +42,24 @@ pub enum BackgroundData {
     Grayscale(u16),
     RGB((u16, u16, u16)),
     PaletteIndex(u8)
+}
+//
+//Colour type 0
+//Grey sample value	2 bytes
+//Colour type 2
+//Red sample value	2 bytes
+//Blue sample value	2 bytes
+//Green sample value	2 bytes
+//Colour type 3
+//Alpha for palette index 0	1 byte
+//Alpha for palette index 1	1 byte
+//...etc...	1 byte
+
+#[derive(Debug, PartialEq)]
+pub enum TransparencyData {
+    Graysample(u16),
+    RGB((u16, u16, u16)),
+    PaletteIndices(Vec<u8>)
 }
 
 #[derive(PartialEq)]
@@ -60,8 +80,10 @@ pub enum ChunkData {
         image_gamma: f64,
     },
     PLTE(Vec<(u8, u8, u8)>),
-    bKGD(BackgroundData)
+    bKGD(BackgroundData),
+    tRNS(TransparencyData)
 }
+
 
 impl std::fmt::Debug for ChunkData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -91,8 +113,8 @@ impl std::fmt::Debug for ChunkData {
                 .field("image_gamma", image_gamma)
                 .finish(),
             Self::PLTE(entries) => f.debug_tuple("PLTE").field(entries).finish(),
-            Self::bKGD(bg_data) => f.debug_tuple("bKGD").field(bg_data).finish()
-
+            Self::bKGD(data) => f.debug_tuple("bKGD").field(data).finish(),
+            Self::tRNS(data) => f.debug_tuple("tRNS").field(data).finish()
         }
     }
 }

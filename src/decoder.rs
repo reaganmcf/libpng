@@ -1,6 +1,6 @@
 use crate::bit_depth::BitDepth;
 use crate::buffer::Buffer;
-use crate::chunk::{BackgroundData, Chunk, ChunkData, ChunkType};
+use crate::chunk::{BackgroundData, Chunk, ChunkData, ChunkType, TransparencyData};
 use crate::color_type::ColorType;
 use crate::error::DecodeError;
 use crate::interlace_method::InterlaceMethod;
@@ -73,6 +73,7 @@ impl Decoder {
             ChunkType::gAMA => self.read_gama_chunk_data(length)?,
             ChunkType::PLTE => self.read_plte_chunk_data(length)?,
             ChunkType::bKGD => self.read_bkgd_chunk_data(length)?,
+            ChunkType::tRNS => self.read_trns_chunk_data(length)?
         };
 
         let crc = self.buffer.read_u32()?;
@@ -170,5 +171,37 @@ impl Decoder {
         };
 
         Ok(ChunkData::bKGD(inner))
+    }
+
+    fn read_trns_chunk_data(&mut self, length: u32) -> Result<ChunkData, DecodeError> {
+        let length: usize = length.try_into().unwrap();
+        let inner = match self.get_color_type() {
+            ColorType::_0 => {
+                let graysample = self.buffer.read_u16()?;
+                Ok(TransparencyData::Graysample(graysample))
+            }
+            ColorType::_2 => {
+                let red = self.buffer.read_u16()?;
+                let green = self.buffer.read_u16()?;
+                let blue = self.buffer.read_u16()?;
+
+                Ok(TransparencyData::RGB((red, green, blue)))
+            }
+            ColorType::_3 => {
+                // TODO - check that there arent more entries than palette entries
+
+                let mut indices = Vec::with_capacity(length);
+                for _ in 0..length {
+                    let index = self.buffer.read_u8()?;
+                    indices.push(index);
+                }
+
+                Ok(TransparencyData::PaletteIndices(indices))
+            }
+            ColorType::_4 | ColorType::_6 => Err(DecodeError::UnexpectedtRNSChunk),
+        }?;
+        
+
+        Ok(ChunkData::tRNS(inner))
     }
 }

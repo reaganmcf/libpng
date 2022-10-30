@@ -7,4 +7,5 @@ pub enum DecodeError {
     InvalidBitDepth,
     InvalidColorType,
     InvalidInterlaceMethod,
+    UnexpectedtRNSChunk
 }
