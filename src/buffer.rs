@@ -39,6 +39,15 @@ impl Buffer {
         Ok(u32::from_be_bytes(res))
     }
 
+    pub fn read_u16(&mut self) -> Result<u16, DecodeError> {
+        let mut res: [u8; 2] = Default::default();
+        let bytes = self.read_n(2)?;
+
+        res.copy_from_slice(&bytes[0..2]);
+
+        Ok(u16::from_be_bytes(res))
+    }
+
     pub fn read_u8(&mut self) -> Result<u8, DecodeError> {
         let byte = self.read_n(1)?[0];
         Ok(byte)

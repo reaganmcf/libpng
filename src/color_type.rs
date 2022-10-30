@@ -1,6 +1,6 @@
 use crate::error::DecodeError;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ColorType {
     _0,
     _2,

@@ -1,13 +1,13 @@
 use crate::bit_depth::BitDepth;
 use crate::buffer::Buffer;
-use crate::chunk::{Chunk, ChunkData, ChunkType};
+use crate::chunk::{BackgroundData, Chunk, ChunkData, ChunkType};
 use crate::color_type::ColorType;
 use crate::error::DecodeError;
 use crate::interlace_method::InterlaceMethod;
 
 pub struct Decoder {
     buffer: Buffer,
-    chunks: Vec<Chunk>
+    chunks: Vec<Chunk>,
 }
 
 const PNG_SIGNATURE: &[u8] = &[137, 80, 78, 71, 13, 10, 26, 10];
@@ -15,7 +15,7 @@ impl Decoder {
     pub fn new(bytes: Vec<u8>) -> Self {
         Self {
             buffer: Buffer::new(bytes),
-            chunks: Vec::new()
+            chunks: Vec::new(),
         }
     }
 
@@ -39,6 +39,18 @@ impl Decoder {
         Ok(())
     }
 
+    fn get_color_type(&self) -> ColorType {
+        let ihdr = self
+            .chunks
+            .first()
+            .expect("the ihdr chunk should have already been decoded");
+
+        match &ihdr.data {
+            ChunkData::IHDR { color_type, .. } => *color_type,
+            _ => panic!("the first chunk wasn't an ihdr"),
+        }
+    }
+
     fn read_signature(&mut self) -> Result<(), DecodeError> {
         let items = self.buffer.read_n(8)?;
 
@@ -60,6 +72,7 @@ impl Decoder {
             ChunkType::IEND => ChunkData::IEND,
             ChunkType::gAMA => self.read_gama_chunk_data(length)?,
             ChunkType::PLTE => self.read_plte_chunk_data(length)?,
+            ChunkType::bKGD => self.read_bkgd_chunk_data(length)?,
         };
 
         let crc = self.buffer.read_u32()?;
@@ -135,5 +148,27 @@ impl Decoder {
         }
 
         Ok(ChunkData::PLTE(entries))
+    }
+
+    fn read_bkgd_chunk_data(&mut self, _length: u32) -> Result<ChunkData, DecodeError> {
+        let inner = match self.get_color_type() {
+            ColorType::_0 | ColorType::_4 => {
+                let grayscale = self.buffer.read_u16()?;
+                BackgroundData::Grayscale(grayscale)
+            }
+            ColorType::_2 | ColorType::_6 => {
+                let red = self.buffer.read_u16()?;
+                let green = self.buffer.read_u16()?;
+                let blue = self.buffer.read_u16()?;
+
+                BackgroundData::RGB((red, green, blue))
+            }
+            ColorType::_3 => {
+                let palette_index = self.buffer.read_u8()?;
+                BackgroundData::PaletteIndex(palette_index)
+            }
+        };
+
+        Ok(ChunkData::bKGD(inner))
     }
 }
