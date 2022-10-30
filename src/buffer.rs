@@ -1,11 +1,11 @@
 use crate::error::DecodeError;
 
-pub struct Buffer<'a> {
-    inner: &'a [u8],
+pub struct Buffer {
+    inner: &'static [u8],
     cursor: usize,
 }
 
-impl<'a> Buffer<'_> {
+impl Buffer {
     pub fn new(buf: Vec<u8>) -> Self {
         let c: &[u8] = buf.leak();
         Self {
